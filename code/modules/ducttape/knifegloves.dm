@@ -48,11 +48,12 @@
 	return 1
 
 /datum/martial_art/knifegloves/harm_act(mob/living/carbon/human/A, mob/living/carbon/human/D)
-	A.do_attack_animation(D)
+	var/def_zone = ran_zone(A.zone_sel.selecting)
+	A.do_attack_animation(D, target_zone=def_zone)
 	var/atk_verb = pick("sharp left hook","sharp right hook","straight stab")
 	var/damage = rand(8, 12)
 
-	var/obj/item/organ/limb/affecting = D.get_organ(ran_zone(A.zone_sel.selecting))
+	var/obj/item/organ/limb/affecting = D.get_organ(def_zone)
 	var/armor_block = D.run_armor_check(affecting, "melee","","",15)
 
 	playsound(D.loc, list('sound/weapons/knifegloves1.ogg','sound/weapons/knifegloves2.ogg'), 50, 1)

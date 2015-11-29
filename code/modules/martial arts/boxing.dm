@@ -10,10 +10,10 @@
 	return 1
 
 /datum/martial_art/boxing/harm_act(mob/living/carbon/human/A, mob/living/carbon/human/D)
-
-	A.do_attack_animation(D)
-
 	var/atk_verb = pick("left hook","right hook","straight punch")
+
+	var/def_zone = ran_zone(A.zone_sel.selecting)
+	A.do_attack_animation(D, target_zone=def_zone)
 
 	var/damage = rand(5,8) + A.dna.species.punchmod
 	if(!damage)
@@ -22,14 +22,13 @@
 		add_logs(A, D, "attempted to hit", atk_verb)
 		return 0
 
-
-	var/obj/item/organ/limb/affecting = D.get_organ(ran_zone(A.zone_sel.selecting))
+	var/obj/item/organ/limb/affecting = D.get_organ(def_zone)
 	var/armor_block = D.run_armor_check(affecting, "melee")
 
 	playsound(D.loc, list('sound/weapons/boxing1.ogg','sound/weapons/boxing2.ogg','sound/weapons/boxing3.ogg','sound/weapons/boxing4.ogg'), 25, 1, -1)
 
-	D.visible_message("<span class='danger'>[A] has hit [D] with a [atk_verb]!</span>", \
-								"<span class='userdanger'>[A] has hit [D] with a [atk_verb]!</span>")
+	D.visible_message("<span class='danger'>[A] has hit [D] with a [atk_verb] in [affecting.getDisplayName()]!</span>", \
+								"<span class='userdanger'>[A] has hit [D] with a [atk_verb] in [affecting.getDisplayName()]!</span>")
 
 	D.apply_damage(damage, STAMINA, affecting, armor_block)
 	add_logs(A, D, "boxed")

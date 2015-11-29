@@ -927,7 +927,8 @@
 			if(attacker_style && attacker_style.harm_act(M,H))
 				return 1
 			else
-				M.do_attack_animation(H)
+				var/def_zone = ran_zone(M.zone_sel.selecting)
+				M.do_attack_animation(H, target_zone=def_zone)
 
 				var/atk_verb = M.dna.species.attack_verb
 				if(H.lying)
@@ -941,7 +942,7 @@
 					return 0
 
 
-				var/obj/item/organ/limb/affecting = H.get_organ(ran_zone(M.zone_sel.selecting))
+				var/obj/item/organ/limb/affecting = H.get_organ(def_zone)
 				var/armor_block = H.run_armor_check(affecting, "melee")
 
 				playsound(H.loc, get_sfx(M.dna.species.attack_sound), 25, 1, -1)
@@ -967,12 +968,13 @@
 			if(attacker_style && attacker_style.disarm_act(M,H))
 				return 1
 			else
-				M.do_attack_animation(H)
+				var/def_zone = ran_zone(M.zone_sel.selecting)
+				M.do_attack_animation(H, target_zone=def_zone)
 				add_logs(M, H, "disarmed")
 
 				if(H.w_uniform)
 					H.w_uniform.add_fingerprint(M)
-				var/obj/item/organ/limb/affecting = H.get_organ(ran_zone(M.zone_sel.selecting))
+				var/obj/item/organ/limb/affecting = H.get_organ(def_zone)
 				var/randn = rand(1, 100)
 				if(randn <= 25)
 					playsound(H, 'sound/weapons/thudswoosh.ogg', 50, 1, -1)
@@ -1024,7 +1026,7 @@
 /datum/species/proc/spec_attacked_by(obj/item/I, mob/living/user, def_zone, obj/item/organ/limb/affecting, hit_area, intent, obj/item/organ/limb/target_limb, target_area, mob/living/carbon/human/H)
 	// Allows you to put in item-specific reactions based on species
 	if(user != H)
-		user.do_attack_animation(H)
+		user.do_attack_animation(H, target_zone=affecting.name)
 	var/shieldcheck = H.check_shields(I.force, "the [I.name]", I, 0, I.armour_penetration)
 	if(shieldcheck)
 		if(isliving(shieldcheck))

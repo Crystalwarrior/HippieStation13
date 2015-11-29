@@ -784,7 +784,7 @@ Sorry Giacom. Please don't be mad :(
 	return
 
 
-/atom/movable/proc/do_attack_animation(atom/A, end_pixel_y)
+/atom/movable/proc/do_attack_animation(atom/A, end_pixel_y, target_zone="chest")
 	var/direction = get_dir(src, A)
 	do_bounce_anim_dir(direction, 2, end_pixel_y=end_pixel_y)
 
@@ -794,31 +794,69 @@ Sorry Giacom. Please don't be mad :(
 	var/final_pixel_y = initial(pixel_y)
 	if(end_pixel_y)
 		final_pixel_y = end_pixel_y
-	switch(direction)
-		if(NORTH)
-			pixel_y_diff = 8
-		if(SOUTH)
-			pixel_y_diff = -8
-		if(EAST)
-			pixel_x_diff = 8
-		if(WEST)
-			pixel_x_diff = -8
-		if(NORTHEAST)
-			pixel_x_diff = 8
-			pixel_y_diff = 8
-		if(NORTHWEST)
-			pixel_x_diff = -8
-			pixel_y_diff = 8
-		if(SOUTHEAST)
-			pixel_x_diff = 8
-			pixel_y_diff = -8
-		if(SOUTHWEST)
-			pixel_x_diff = -8
-			pixel_y_diff = -8
+	if(direction & NORTH)
+		pixel_y_diff = 8
+	else if(direction & SOUTH)
+		pixel_y_diff = -8
+
+	if(direction & EAST)
+		pixel_x_diff = 8
+	else if(direction & WEST)
+		pixel_x_diff = -8
 
 	animate(src, pixel_x = pixel_x + pixel_x_diff, pixel_y = pixel_y + pixel_y_diff, time = wait, easing = easein)
 	animate(pixel_x = initial(pixel_x), pixel_y = final_pixel_y, time = wait, easing = easeout)
 
+
+/mob/living/do_attack_animation(atom/A, end_pixel_y, target_zone="chest")
+	..(A, end_pixel_y, target_zone)
+
+	// What icon do we use for the attack?
+	var/image/I
+	if(hand && l_hand) // Attacked with item in left hand.
+		I = image(l_hand.icon, A, l_hand.icon_state, A.layer + 1)
+	else if (!hand && r_hand) // Attacked with item in right hand.
+		I = image(r_hand.icon, A, r_hand.icon_state, A.layer + 1)
+	else // Attacked with a fist maybe?
+		return
+
+	// Who can see the attack?
+	var/list/viewing = list()
+	for (var/mob/M in viewers(A))
+		if (M.client)
+			viewing |= M.client
+	flick_overlay(I, viewing, 10)
+
+	// Scale the icon.
+	// I.transform *= 0.75
+	var/list/offsets = list(0, 0) //offsets[1] for pixel_x, offsets[2] for pixel_y
+	if(ishuman(A))
+		var/mob/living/carbon/human/H = A
+		offsets = H.get_organ_pixel_offset(target_zone) //set da offsets
+	// Set the direction of the icon animation.
+	var/direction = get_dir(src, A)
+	if(direction & EAST)
+		I.pixel_x = -16 + offsets[1]
+	else if(direction & WEST)
+		I.pixel_x = 16 + offsets[1]
+
+	if(direction & NORTH)
+		I.pixel_y = -16 + offsets[2]
+	else if(direction & SOUTH)
+		I.pixel_y = 16 + offsets[2]
+
+	if(!direction) // Attacked self?!
+		I.pixel_z = 16
+
+	var/matrix/mleft = matrix(I.transform)
+	mleft.Turn(direction & EAST ? -45 : 45)
+	var/matrix/mright = matrix(I.transform)
+	mright.Turn(direction & EAST ? 45 : -45)
+	I.transform = mleft
+	// And animate the attack!
+	I.alpha = 150
+	animate(I, alpha = 255, pixel_x = 0 + offsets[1], pixel_y = 0 + offsets[2], pixel_z = 0, transform = mright, time = 4, easing = ELASTIC_EASING)
+	animate(alpha = 0, time = 6, pixel_y = I.pixel_y - 4, easing = SINE_EASING)
 /mob/living/do_bounce_anim_dir(direction, wait, strength=8, easein=0, easeout=0, end_pixel_y)
 	var/final_pixel_y = get_standard_pixel_y_offset(lying)
 	..(direction, wait, strength, easein, easeout, final_pixel_y)
