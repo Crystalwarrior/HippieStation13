@@ -26,6 +26,7 @@
 
 /mob/living/proc/attacked_by(obj/item/I, mob/living/user, def_zone)
 	apply_damage(I.force, I.damtype, def_zone)
+	do_damage_animation(I.force, i_state=I.damtype)
 	if(I.damtype == "brute")
 		if(prob(33) && I.force)
 			var/turf/location = src.loc

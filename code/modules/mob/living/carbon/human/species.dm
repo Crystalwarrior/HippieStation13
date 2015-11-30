@@ -927,21 +927,20 @@
 			if(attacker_style && attacker_style.harm_act(M,H))
 				return 1
 			else
-				var/def_zone = ran_zone(M.zone_sel.selecting)
-				M.do_attack_animation(H, target_zone=def_zone)
+				M.do_attack_animation(H)
 
+				var/def_zone = ran_zone(M.zone_sel.selecting)
 				var/atk_verb = M.dna.species.attack_verb
 				if(H.lying)
 					atk_verb = "kick"
 
 				var/damage = rand(0, 9) + M.dna.species.punchmod
-
 				if(!damage)
 					playsound(H.loc, M.dna.species.miss_sound, 25, 1, -1)
 					H.visible_message("<span class='warning'>[M] has attempted to [atk_verb] [H]!</span>")
 					return 0
 
-
+				
 				var/obj/item/organ/limb/affecting = H.get_organ(def_zone)
 				var/armor_block = H.run_armor_check(affecting, "melee")
 
@@ -951,6 +950,7 @@
 								"<span class='userdanger'>[M] has [atk_verb]ed [H]!</span>")
 
 				H.apply_damage(damage, BRUTE, affecting, armor_block)
+				H.do_damage_animation(damage, affecting.name)
 				add_logs(M, H, "punched")
 				if((H.stat != DEAD) && damage >= 9)
 					H.visible_message("<span class='danger'>[M] has weakened [H]!</span>", \
@@ -968,12 +968,13 @@
 			if(attacker_style && attacker_style.disarm_act(M,H))
 				return 1
 			else
-				var/def_zone = ran_zone(M.zone_sel.selecting)
-				M.do_attack_animation(H, target_zone=def_zone)
+				M.do_attack_animation(H)
 				add_logs(M, H, "disarmed")
 
 				if(H.w_uniform)
 					H.w_uniform.add_fingerprint(M)
+
+				var/def_zone = ran_zone(M.zone_sel.selecting)
 				var/obj/item/organ/limb/affecting = H.get_organ(def_zone)
 				var/randn = rand(1, 100)
 				if(randn <= 25)
@@ -1025,8 +1026,8 @@
 
 /datum/species/proc/spec_attacked_by(obj/item/I, mob/living/user, def_zone, obj/item/organ/limb/affecting, hit_area, intent, obj/item/organ/limb/target_limb, target_area, mob/living/carbon/human/H)
 	// Allows you to put in item-specific reactions based on species
-	if(user != H)
-		user.do_attack_animation(H, target_zone=affecting.name)
+	user.do_attack_animation(H)
+
 	var/shieldcheck = H.check_shields(I.force, "the [I.name]", I, 0, I.armour_penetration)
 	if(shieldcheck)
 		if(isliving(shieldcheck))
@@ -1109,7 +1110,7 @@
 	var/Iforce = I.force //to avoid runtimes on the forcesay checks at the bottom. Some items might delete themselves if you drop them. (stunning yourself, ninja swords)
 
 	apply_damage(I.force, I.damtype, affecting, armor_block, H)
-
+	H.do_damage_animation(I.force, affecting.name, I.damtype)
 	var/bloody = 0
 	if(((I.damtype == BRUTE) && I.force && prob(25 + (I.force * 2))))
 		if(affecting.status == ORGAN_ORGANIC)
@@ -1202,7 +1203,6 @@
 	if(!organ)	return 0
 
 	damage = (damage * blocked)
-
 	switch(damagetype)
 		if(BRUTE)
 			H.damageoverlaytemp = 20

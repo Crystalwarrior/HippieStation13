@@ -11,19 +11,20 @@
 /mob/living/proc/apply_damage(damage = 0,damagetype = BRUTE, def_zone = null, blocked = 0)
 	blocked = (100-blocked)/100
 	if(!damage || (blocked <= 0))	return 0
+	damage *= blocked
 	switch(damagetype)
 		if(BRUTE)
-			adjustBruteLoss(damage * blocked)
+			adjustBruteLoss(damage)
 		if(BURN)
-			adjustFireLoss(damage * blocked)
+			adjustFireLoss(damage)
 		if(TOX)
-			adjustToxLoss(damage * blocked)
+			adjustToxLoss(damage)
 		if(OXY)
-			adjustOxyLoss(damage * blocked)
+			adjustOxyLoss(damage)
 		if(CLONE)
-			adjustCloneLoss(damage * blocked)
+			adjustCloneLoss(damage)
 		if(STAMINA)
-			adjustStaminaLoss(damage * blocked)
+			adjustStaminaLoss(damage)
 	updatehealth()
 	return 1
 

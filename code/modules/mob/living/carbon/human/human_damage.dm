@@ -161,18 +161,18 @@
 /mob/living/carbon/human/proc/get_organ_pixel_offset(zone) //Returns you a list containing two vars that stand for "pixel_x" and "pixel_y" offsets from center
 	switch(zone)
 		if("head")
-			return list(0, 6) //pixel y: 6
+			return list(0, 8)
 		if("l_leg")
-			return (dir & SOUTH || dir & EAST) ? list(3, -6) : list(-3, -6) //SOUTH/EAST = former, NORTH/WEST = latter
+			return (dir & SOUTH || dir & EAST) ? list(3, -8) : list(-3, -8) //SOUTH/EAST = former, NORTH/WEST = latter
 		if("r_leg")
-			return (dir & SOUTH || dir & EAST) ? list(-3, -6) : list(3, -6) //SOUTH/EAST = former, NORTH/WEST = latter
+			return (dir & SOUTH || dir & EAST) ? list(-3, -8) : list(3, -8) //SOUTH/EAST = former, NORTH/WEST = latter
 		if("l_arm")
-			var/R = dir & SOUTH ? list(-6, 0) : list(6, 0)
+			var/R = dir & SOUTH ? list(6, 0) : list(-6, 0)
 			if(dir & EAST || dir & WEST)
 				R = dir & EAST ? list(4, 0) : list(-4, 0)
 			return R
 		if("r_arm")
-			var/R = dir & SOUTH ? list(6, 0) : list(-6, 0)
+			var/R = dir & SOUTH ? list(-6, 0) : list(6, 0)
 			if(dir & EAST || dir & WEST)
 				R = dir & EAST ? list(-4, 0) : list(4, 0)
 			return R

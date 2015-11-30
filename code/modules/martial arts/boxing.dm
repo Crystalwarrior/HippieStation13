@@ -13,7 +13,7 @@
 	var/atk_verb = pick("left hook","right hook","straight punch")
 
 	var/def_zone = ran_zone(A.zone_sel.selecting)
-	A.do_attack_animation(D, target_zone=def_zone)
+	A.do_attack_animation(D)
 
 	var/damage = rand(5,8) + A.dna.species.punchmod
 	if(!damage)
