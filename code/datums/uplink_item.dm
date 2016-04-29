@@ -106,6 +106,17 @@ var/list/uplink_items = list()
 		return 1
 	return 0
 
+/datum/uplink_item/proc/CanBuy(obj/item/device/uplink/U, mob/user)
+	if(jobs.len && !(user.mind.assigned_role in jobs))
+		// world << "User doesn't fit the job requirement."
+		return 0
+	if(jobs_exclude.len && (user.mind.assigned_role in jobs_exclude))
+		// world << "User's job is excluded."
+		return 0
+	if(U.uses < cost)
+		return 0
+	return 1
+
 /*
 //
 //	UPLINK ITEMS
@@ -115,7 +126,7 @@ var/list/uplink_items = list()
 // JOB-SPECIFIC ITEMS
 
 /datum/uplink_item/job_specific //No job-specific support for surplus yet.
-	category = "Job-specific Contraband"
+	category = "Job-specific"
 	surplus = 0
 
 //ENGINEER DIVISION
@@ -194,7 +205,7 @@ var/list/uplink_items = list()
 //equipment room access
 
 /datum/uplink_item/equipaccess
-	category = "Equipment room access"
+	category = "Equipment Access"
 	gamemodes = list(/datum/game_mode/nuclear)
 
 /datum/uplink_item/equipaccess/blastco
@@ -207,7 +218,7 @@ var/list/uplink_items = list()
 //Operator special offers
 
 /datum/uplink_item/specoffer
-	category = "Special offer roles"
+	category = "Spec. offers"
 	gamemodes = list(/datum/game_mode/nuclear)
 
 /datum/uplink_item/specoffer/c20r

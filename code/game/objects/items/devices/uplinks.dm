@@ -19,6 +19,8 @@ var/list/world_uplinks = list()
 
 	var/mode_override = null
 
+	var/tab = null
+
 /obj/item/device/uplink/New()
 	..()
 	world_uplinks+=src
@@ -27,65 +29,77 @@ var/list/world_uplinks = list()
 	world_uplinks-=src
 	return ..()
 
+//Spellbook wrap thing, now in uplinks!
+/obj/item/device/uplink/proc/wrap(content)
+	var/dat = "<body link='yellow' alink='white' bgcolor='#601414'><font color='white'>"
+	dat +="<html><head><title>[welcome]</title></head>"
+	dat += {"
+	<head>
+		<style type="text/css">
+      		body { font-size: 80%; font-family: 'Lucida Grande', Verdana, Arial, Sans-Serif; }
+      		ul#tabs { list-style-type: none; margin: 30px 0 0 0; padding: 0 0 0.3em 0; }
+      		ul#tabs li { display: inline; }
+      		ul#tabs li a { vertical-align:10px; color: #42454a; background-color: #dedbde; border: 1px solid #c9c3ba; border-bottom: none; padding: 0.3em; text-decoration: none; }
+      		ul#tabs li a:hover { background-color: #f1f0ee; }
+      		ul#tabs li a.selected { color: #000; background-color: #f1f0ee; font-weight: bold; padding: 0.7em 0.3em 0.38em 0.3em; }
+      		div.tabContent { border: 1px solid #c9c3ba; padding: 0.5em; background-color: #f1f0ee; }
+      		div.tabContent.hide { display: none; }
+    	</style>
+  	</head>
+	"}
+	dat += {"[content]</body></html>"}
+	return dat
+
+/obj/item/device/uplink/proc/GetCategoryHeader(category)
+	var/dat = ""
+	// switch(category)
+	// 	if("Offensive")
+	// 		dat += "Spells and items geared towards debilitating and destroying.<BR><BR>"
+	// 		dat += "Items are not bound to you and can be stolen. Additionaly they cannot typically be returned once purchased.<BR>"
+	// 		dat += "For spells: the number after the spell name is the cooldown time.<BR>"
+	// 		dat += "You can reduce this number by spending more points on the spell.<BR>"
+	return dat
+
 //Let's build a menu!
 /obj/item/device/uplink/proc/generate_menu(mob/user)
-
-	var/dat = "<B>[src.welcome]</B><BR>"
-	dat += "Tele-Crystals left: [src.uses]<BR>"
-	dat += "<HR>"
-	dat += "<B>Request item:</B><BR>"
-	dat += "<I>Each item costs a number of tele-crystals as indicated by the number following their name.</I><br><BR>"
-
 	var/list/buyable_items = get_uplink_items(mode_override)
 
-	// Loop through categories
-	var/index = 0
+	var/dat = ""
+	dat += "<A href='byond://?src=\ref[src];lock=1'>Lock</a>"
+	dat += "<ul id=\"tabs\">"
+	dat += "<li><a><b>TCs left : [uses]</b></a></li>"
+	var/list/cat_dat = list()
 	for(var/category in buyable_items)
+		cat_dat[category] = "<hr>"
+		dat += "<li><a [tab==category?"class=selected":""] href='byond://?src=\ref[src];page=[category]'>[category]</a></li>"
+	dat += "</ul>"
 
-		index++
-		dat += "<b>[category]</b><br>"
-
+	for(var/category in buyable_items)
 		var/i = 0
-
-		// Loop through items in category
-		for(var/datum/uplink_item/item in buyable_items[category])
+		for(var/datum/uplink_item/I in buyable_items[category])
 			i++
-			var/desc = "[item.desc]"
-			var/cost_text = ""
-			if(item.jobs.len && !(user.mind.assigned_role in item.jobs))
-				// world << "User doesn't fit the job requirement."
-				continue
-			if(item.jobs_exclude.len && (user.mind.assigned_role in item.jobs_exclude))
-				// world << "User's job is excluded."
-				continue
-			if(item.cost > 0)
-				cost_text = "([item.cost])"
-			if(item.cost <= uses)
-				dat += "<A href='byond://?src=\ref[src];buy_item=[category]:[i];'>[item.name]</A> [cost_text] "
+
+			var/uplink_info = "<b>[I.name]</b>"
+			uplink_info += " Cost:[I.cost]<br>"
+			uplink_info += "<i>[I.desc]</i><br>"
+			if(I.CanBuy(src,user))
+				uplink_info+= "<a href='byond://?src=\ref[src];buy_item=[category]:[i]'>Purchase</A><br>"
 			else
-				dat += "<font color='grey'><i>[item.name] [cost_text] </i></font>"
-			if(item.desc)
-				if(show_description == item.type)
-					dat += "<A href='byond://?src=\ref[src];show_desc=0'><font size=2>\[-\]</font></A><BR><font size=2>[desc]</font>"
-				else
-					dat += "<A href='byond://?src=\ref[src];show_desc=[item.type]'><font size=2>\[?\]</font></A>"
-			dat += "<BR>"
+				uplink_info+= "<span>Can't purchase</span><br>"
+			uplink_info += "<hr>"
+			if(cat_dat[category])
+				cat_dat[category] += uplink_info
+		dat += "<div class=\"[tab==category?"tabContent":"tabContent hide"]\" id=\"[category]\">"
+		dat += GetCategoryHeader(category)
+		dat += cat_dat[category]
+		dat += "</div>"
 
-		// Break up the categories, if it isn't the last.
-		if(buyable_items.len != index)
-			dat += "<br>"
-
-	dat += "<HR>"
 	return dat
 
 // Interaction code. Gathers a list of items purchasable from the paren't uplink and displays it. It also adds a lock button.
 /obj/item/device/uplink/interact(mob/user as mob)
-
-	var/dat = "<body link='yellow' alink='white' bgcolor='#601414'><font color='white'>"
-	dat += src.generate_menu(user)
-	dat += "<A href='byond://?src=\ref[src];lock=1'>Lock</a>"
-	dat += "</font></body>"
-	user << browse(dat, "window=hidden")
+	var/dat = wrap(generate_menu(user)
+	user << browse(dat), "window=hidden")
 	onclose(user, "hidden")
 	return
 
@@ -114,12 +128,10 @@ var/list/world_uplinks = list()
 				if(I)
 					I.buy(src, usr)
 
+	else if(href_list["page"])
+		tab = sanitize(href_list["page"])
 
-	else if(href_list["show_desc"])
-
-		var/type = text2path(href_list["show_desc"])
-		show_description = type
-		interact(usr)
+	interact(usr)
 
 
 // HIDDEN UPLINK - Can be stored in anything but the host item has to have a trigger for it.
