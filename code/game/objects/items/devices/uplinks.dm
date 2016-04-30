@@ -20,6 +20,7 @@ var/list/world_uplinks = list()
 	var/mode_override = null
 
 	var/tab = null
+	var/sort = 1
 
 /obj/item/device/uplink/New()
 	..()
@@ -36,38 +37,33 @@ var/list/world_uplinks = list()
 	dat += {"
 	<head>
 		<style type="text/css">
-      		body { font-size: 80%; font-family: 'Lucida Grande', Verdana, Arial, Sans-Serif; }
-      		ul#tabs { list-style-type: none; margin: 30px 0 0 0; padding: 0 0 0.3em 0; }
-      		ul#tabs li { display: inline; }
-      		ul#tabs li a { vertical-align:10px; color: #42454a; background-color: #dedbde; border: 1px solid #c9c3ba; border-bottom: none; padding: 0.3em; text-decoration: none; }
-      		ul#tabs li a:hover { background-color: #f1f0ee; }
-      		ul#tabs li a.selected { color: #000; background-color: #f1f0ee; font-weight: bold; padding: 0.7em 0.3em 0.38em 0.3em; }
-      		div.tabContent { border: 1px solid #c9c3ba; padding: 0.5em; background-color: #f1f0ee; }
-      		div.tabContent.hide { display: none; }
-    	</style>
-  	</head>
+			body { font-size: 80%; font-family: 'Lucida Grande', Verdana, Arial, Sans-Serif; text-align: left; text-overflow: ellipsis; }
+			ul#tabs { list-style-type: none; margin: 15px 0 0 0; padding: 0 0 0.3em; }
+			ul#tabs li { display: inline-block; }
+			ul#tabs li a { vertical-align:10px; color: #ffffff; background-color: #445820; border: 2px solid #242424; border-bottom: none; padding: 0.3em; text-decoration: none; }
+			ul#tabs li a:hover { background-color: #ffffff; color: #aaaaff;}
+			ul#tabs li a.selected { color: #000; background-color: #f1f0ee; font-weight: bold; padding: 0.7em 0.3em 0.38em 0.3em; }
+			div.tabContent { border: 2px solid #aa1000; padding: 0.5em; background-color: #702424; }
+			div.tabContent.hide { display: none; }
+		</style>
+	</head>
 	"}
 	dat += {"[content]</body></html>"}
 	return dat
 
-/obj/item/device/uplink/proc/GetCategoryHeader(category)
-	var/dat = ""
-	// switch(category)
-	// 	if("Offensive")
-	// 		dat += "Spells and items geared towards debilitating and destroying.<BR><BR>"
-	// 		dat += "Items are not bound to you and can be stolen. Additionaly they cannot typically be returned once purchased.<BR>"
-	// 		dat += "For spells: the number after the spell name is the cooldown time.<BR>"
-	// 		dat += "You can reduce this number by spending more points on the spell.<BR>"
-	return dat
+//Sorting proc
+/proc/cmp_tc_sort(datum/uplink_item/a, datum/uplink_item/b)
+	return a.cost - b.cost
 
 //Let's build a menu!
 /obj/item/device/uplink/proc/generate_menu(mob/user)
 	var/list/buyable_items = get_uplink_items(mode_override)
 
 	var/dat = ""
-	dat += "<A href='byond://?src=\ref[src];lock=1'>Lock</a>"
+	dat += "<a href='byond://?src=\ref[src];lock=1'>Lock</a>"
+	dat += " | Sort by: <a [sort==1?"class=selected":"href='byond://?src=\ref[src];sort=1'"]>Alphabet</a>/<a [sort==2?"class=selected":"href='byond://?src=\ref[src];sort=2'"]>Cost</a>"
+	dat += "<br><b>TC left: [uses]</b><br>"
 	dat += "<ul id=\"tabs\">"
-	dat += "<li><a><b>TCs left : [uses]</b></a></li>"
 	var/list/cat_dat = list()
 	for(var/category in buyable_items)
 		cat_dat[category] = "<hr>"
@@ -76,21 +72,30 @@ var/list/world_uplinks = list()
 
 	for(var/category in buyable_items)
 		var/i = 0
+		var/cmp = /proc/cmp_name_asc
+		if(sort==2)
+			cmp = /proc/cmp_tc_sort
+		buyable_items[category] = sortTim(buyable_items[category], cmp)
 		for(var/datum/uplink_item/I in buyable_items[category])
 			i++
 
 			var/uplink_info = "<b>[I.name]</b>"
 			uplink_info += " Cost:[I.cost]<br>"
+			if(I.jobs.len)
+				uplink_info += "<b>Required job</b>: [english_list(I.jobs, and_text = " or ")]<br><br>"
+			if(I.jobs_exclude.len)
+				uplink_info += "<b>Excluded jobs</b>: [english_list(I.jobs_exclude)]<br><br>"
 			uplink_info += "<i>[I.desc]</i><br>"
-			if(I.CanBuy(src,user))
-				uplink_info+= "<a href='byond://?src=\ref[src];buy_item=[category]:[i]'>Purchase</A><br>"
+			var/canbuy = I.CanBuy(src,user) //Returns a reason why you can't buy it if it's not 1
+			if(canbuy == 1)
+				uplink_info += "<a href='byond://?src=\ref[src];buy_item=[category]:[i]'>Purchase</A><br>"
 			else
-				uplink_info+= "<span>Can't purchase</span><br>"
+				uplink_info = "<font color='gray'>[uplink_info]</font>"
+				uplink_info += "<u>[canbuy]</u><br>"
 			uplink_info += "<hr>"
 			if(cat_dat[category])
 				cat_dat[category] += uplink_info
 		dat += "<div class=\"[tab==category?"tabContent":"tabContent hide"]\" id=\"[category]\">"
-		dat += GetCategoryHeader(category)
 		dat += cat_dat[category]
 		dat += "</div>"
 
@@ -98,8 +103,8 @@ var/list/world_uplinks = list()
 
 // Interaction code. Gathers a list of items purchasable from the paren't uplink and displays it. It also adds a lock button.
 /obj/item/device/uplink/interact(mob/user as mob)
-	var/dat = wrap(generate_menu(user)
-	user << browse(dat), "window=hidden")
+	var/dat = wrap(generate_menu(user))
+	user << browse(dat, "window=hidden;size=400x444;")
 	onclose(user, "hidden")
 	return
 
@@ -124,9 +129,16 @@ var/list/world_uplinks = list()
 
 			var/list/uplink = buyable_items[category]
 			if(uplink && uplink.len >= number)
+				var/cmp = /proc/cmp_name_asc
+				if(sort==2)
+					cmp = /proc/cmp_tc_sort
+				buyable_items[category] = sortTim(buyable_items[category], cmp)
 				var/datum/uplink_item/I = uplink[number]
 				if(I)
 					I.buy(src, usr)
+
+	else if(href_list["sort"])
+		sort = text2num(sanitize(href_list["sort"]))
 
 	else if(href_list["page"])
 		tab = sanitize(href_list["page"])
